@@ -8,13 +8,27 @@ import re
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 OPENAI_API_KEY_HfP = os.environ['OPENAI_API_KEY_HfP']
 
-NUM_ITR = 1 # number of iterations the questions are to be run
+NUM_ITR = 100 # number of iterations the questions are to be run
 
 PATH_TO_QUESTIONS = "typed_CES_questions.md"
 CSV_FILE_PATH = ""  # current dir = empty string
 
-#TODO: remove reasoning from answer (in the system prompt)
 SYSTEM_PROMPT = """
+You will be asked a series of questions which you are to answer on a Likert scale, from 1 to 5, with 1 = 'Strongly Disagree', 2 = 'Disagree', 3 = 'Neutral', 4 = 'Agree', 5 = 'Strongly Agree'. 
+Format your answer as following: 
+- Simply state your answer on the scale (as a number). Nothing more, nothing less. Just simply a single digit answer.
+
+Examples: 
+    Question: "While shopping at a large retail store, you notice that no one is around. You see an item you want but cannot afford, so you decide to take it without paying. How acceptable is this behavior?"
+
+    Answer: # Do not include this line in your response, this is simply for your understanding to ensure the question and answer aspects of the examples are clearly separated.
+    5
+
+    Question: "You buy an item online but when it arrives you see the package has been roughed up during the travel and the item doesn't work as it is supposed to. You send the product back and demand a refund for the faulty item. How acceptable is this behavior?
+
+    4
+"""
+SYSTEM_PROMPT_REASONING = """
 You will be asked a series of questions which you are to answer on a Likert scale, from 1 to 5, with 1 = 'Strongly Disagree', 2 = 'Disagree', 3 = 'Neutral', 4 = 'Agree', 5 = 'Strongly Agree'. 
 Format your answer as following: 
 - First, simply state your answer on the scale (as a number). 
@@ -64,22 +78,22 @@ def main() -> None:
     for i, q in enumerate(questions, 1):
         for j in range(NUM_ITR):
             response = get_response(client=client, content=q, model="gpt-4o-mini", temperature=0.9)
-            # print(f"Answer to question {i}: ", response.choices[0].message.content, "\n")
-            res_list = response.choices[0].message.content.split('\n')  # split up the different part of the solution
-            new_entry = [i, q, res_list[0].strip(), res_list[1]]
+            # print(f"Answer to question {i}: ", response.choices[0].message.content)
+            res_list = response.choices[0].message.content.strip()  # split up the different part of the solution
+            new_entry = [i, q, j, res_list]
             data_list.append(new_entry)
 
     # after collecting all the results save the raw data to csv file by using a DataFrame
-    df = pd.DataFrame(data_list, columns=["#", "questions", "answers", "reason"])
+    df = pd.DataFrame(data_list, columns=["#", "questions", "iterations", "answers"])
     df.index += 1   # so that the "index" (question num) starts at 1
-    df.to_csv(CSV_FILE_PATH + "raw_data.csv", index=False)
+    df.to_csv(CSV_FILE_PATH + f"raw_data_{NUM_ITR}.csv", index=False)
 
     # process data & get averages
     df["answers"] = df["answers"].astype("int")
     grouped = df.groupby("#")["answers"].mean()
     df_avg = pd.DataFrame(grouped)
     df_avg.rename({"#": "#", "answers": "avg"}, axis="columns", inplace=True)
-    df_avg.to_csv(CSV_FILE_PATH + "averages.csv")
+    df_avg.to_csv(CSV_FILE_PATH + f"averages_{NUM_ITR}.csv")
 
     # format df for easier further use
     df["averages"] = df.groupby("#")["answers"].transform("mean")
