@@ -8,8 +8,12 @@ import re
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 OPENAI_API_KEY_HfP = os.environ['OPENAI_API_KEY_HfP']
 
-PATH_TO_QUESTIONS = "contextualized_CES_sample_questions.md"
+NUM_ITR = 1 # number of iterations the questions are to be run
 
+PATH_TO_QUESTIONS = "typed_CES_questions.md"
+CSV_FILE_PATH = ""  # current dir = empty string
+
+#TODO: remove reasoning from answer (in the system prompt)
 SYSTEM_PROMPT = """
 You will be asked a series of questions which you are to answer on a Likert scale, from 1 to 5, with 1 = 'Strongly Disagree', 2 = 'Disagree', 3 = 'Neutral', 4 = 'Agree', 5 = 'Strongly Agree'. 
 Format your answer as following: 
@@ -38,6 +42,7 @@ def extract_question(path: str, regex: str) -> list:
 
     return matches
 
+# function to get completion from GPT
 def get_response(client, content: str, model="gpt-4o-mini", temperature=0.9):
     response = client.chat.completions.create(
         model=model,
@@ -52,11 +57,34 @@ def main() -> None:
 
     # make regex to extract questions correctly
     re_context_question = r'.*Contextualized version\*\*:\s*"([^"]+)"'
-    questions = extract_question(PATH_TO_QUESTIONS, re_context_question)
+    re_typed_question = r'^- (.+)$'
+    questions = extract_question(PATH_TO_QUESTIONS, re_typed_question)
 
-    for i, q in enumerate(questions):
-        response = get_response(client=client, content=q)
-        print(f"Answer to question {i}: ", response.choices[0].message.content, "\n")
+    data_list = []  # list to continuously collect the results from the model (in place growth)
+    for i, q in enumerate(questions, 1):
+        for j in range(NUM_ITR):
+            response = get_response(client=client, content=q, model="gpt-4o-mini", temperature=0.9)
+            # print(f"Answer to question {i}: ", response.choices[0].message.content, "\n")
+            res_list = response.choices[0].message.content.split('\n')  # split up the different part of the solution
+            new_entry = [i, q, res_list[0].strip(), res_list[1]]
+            data_list.append(new_entry)
+
+    # after collecting all the results save the raw data to csv file by using a DataFrame
+    df = pd.DataFrame(data_list, columns=["#", "questions", "answers", "reason"])
+    df.index += 1   # so that the "index" (question num) starts at 1
+    df.to_csv(CSV_FILE_PATH + "raw_data.csv", index=False)
+
+    # process data & get averages
+    df["answers"] = df["answers"].astype("int")
+    grouped = df.groupby("#")["answers"].mean()
+    df_avg = pd.DataFrame(grouped)
+    df_avg.rename({"#": "#", "answers": "avg"}, axis="columns", inplace=True)
+    df_avg.to_csv(CSV_FILE_PATH + "averages.csv")
+
+    # format df for easier further use
+    df["averages"] = df.groupby("#")["answers"].transform("mean")
+    df[["#", "questions",  "averages"]] = df[["#", "questions", "averages"]].mask(df[["#", "questions", "averages"]].duplicated(), "")
+    print(df)
 
 if __name__ == '__main__':
     import sys
