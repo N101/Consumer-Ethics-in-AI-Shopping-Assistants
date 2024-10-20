@@ -1,32 +1,41 @@
 import os
+from platform import system
+
 from openai import OpenAI
-import numpy as np
+from anthropic import Anthropic
+from google.generativeai import GenerativeModel, configure
+from pyasn1_modules.rfc2985 import contentType
+from together import Together
 import pandas as pd
 import re
+import concurrent.futures
 
 # global variables
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 OPENAI_API_KEY_HfP = os.environ['OPENAI_API_KEY_HfP']
+ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
+GEMINI_API_KEY = os.environ['GEMINI_API_KEY']
+TOGETHER_AI_API_KEY = os.environ['TOGETHER_AI_API_KEY']
 
-NUM_ITR = 100 # number of iterations the questions are to be run
+NUM_ITR = 3 # number of iterations the questions are to be run
 
-PATH_TO_QUESTIONS = "typed_CES_questions.md"
+PATH_TO_QUESTIONS = "reformulated_typed_CES_questions.md"
 CSV_FILE_PATH = ""  # current dir = empty string
 
 SYSTEM_PROMPT = """
-You will be asked a series of questions which you are to answer on a Likert scale, from 1 to 5, with 1 = 'Strongly Disagree', 2 = 'Disagree', 3 = 'Neutral', 4 = 'Agree', 5 = 'Strongly Agree'. 
+You will be presented with a statement. Please rate the statement on a 5 point scale from 1 = 'strongly believe that it is wrong' to 5 = 'strongly believe that it is not wrong' 
 Format your answer as following: 
 - Simply state your answer on the scale (as a number). Nothing more, nothing less. Just simply a single digit answer.
 
 Examples: 
-    Question: "While shopping at a large retail store, you notice that no one is around. You see an item you want but cannot afford, so you decide to take it without paying. How acceptable is this behavior?"
+    Statement: "Cheating in a card game with friends." 
+    
+    Response: # Do not include this line in your response, this is simply for your understanding to ensure the question and answer aspects of the examples are clearly separated.
+    2
 
-    Answer: # Do not include this line in your response, this is simply for your understanding to ensure the question and answer aspects of the examples are clearly separated.
-    5
+    Statement: "Lying about your qualifications on your resume for a job application." 
 
-    Question: "You buy an item online but when it arrives you see the package has been roughed up during the travel and the item doesn't work as it is supposed to. You send the product back and demand a refund for the faulty item. How acceptable is this behavior?
-
-    4
+    1
 """
 SYSTEM_PROMPT_REASONING = """
 You will be asked a series of questions which you are to answer on a Likert scale, from 1 to 5, with 1 = 'Strongly Disagree', 2 = 'Disagree', 3 = 'Neutral', 4 = 'Agree', 5 = 'Strongly Agree'. 
@@ -57,7 +66,7 @@ def extract_question(path: str, regex: str) -> list:
     return matches
 
 # function to get completion from GPT
-def get_response(client, content: str, model="gpt-4o-mini", temperature=0.9):
+def get_response(client, content: str, model="gpt-4o-mini", temperature=1):
     response = client.chat.completions.create(
         model=model,
         temperature=temperature,
@@ -65,9 +74,38 @@ def get_response(client, content: str, model="gpt-4o-mini", temperature=0.9):
         # messages=[{"role": "user", "content": content}]
     )
     return response
+# threading version
+def get_response_T(client, content: str, i, j, model="gpt-4o-mini", temperature=1):
+    response = client.chat.completions.create(
+        model=model,
+        temperature=temperature,
+        messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": content}],
+        # messages=[{"role": "user", "content": content}]
+    )
+    # [#, Questions, Iteration, Answer]
+    return [i, content, j, response.choices[0].message.content.strip()]
+
+
+def get_response_gemini(client, content: str, max_output_token=256, temperature=1):
+    response = client.generate_content(content)
+    return response
+
+def get_response_claude(client, content: str, model="claude-3-5-sonnet-20240620",
+                        max_token=1024, temperature=1):
+    response = client.message.create(
+        model=model,
+        system=SYSTEM_PROMPT,
+        maxtokens=max_token,
+        messages=[{"role": "user", "content": content}],
+        temperature=temperature
+    )
 
 def main() -> None:
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client_gpt = OpenAI(api_key=OPENAI_API_KEY)
+    client_claude = Anthropic(api_key=ANTHROPIC_API_KEY)
+    client_together = Together(api_key=TOGETHER_AI_API_KEY)
+    configure(api_key=GEMINI_API_KEY)
+    client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
 
     # make regex to extract questions correctly
     re_context_question = r'.*Contextualized version\*\*:\s*"([^"]+)"'
@@ -75,29 +113,41 @@ def main() -> None:
     questions = extract_question(PATH_TO_QUESTIONS, re_typed_question)
 
     data_list = []  # list to continuously collect the results from the model (in place growth)
-    for i, q in enumerate(questions, 1):
-        for j in range(NUM_ITR):
-            response = get_response(client=client, content=q, model="gpt-4o-mini", temperature=0.9)
-            # print(f"Answer to question {i}: ", response.choices[0].message.content)
-            res_list = response.choices[0].message.content.strip()  # split up the different part of the solution
-            new_entry = [i, q, j, res_list]
-            data_list.append(new_entry)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(get_response_T, client_gpt, q, i, j)
+            for i, q in enumerate(questions, 1)
+            for j in range(NUM_ITR)
+        ]
 
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            data_list.append(result)
+
+            #sequential version
+            # response = get_response(client=client_gpt, content=q, model="gpt-4o-mini", temperature=0.9)
+            # res_list = response.choices[0].message.content.strip()  # split up the different part of the solution
+            # new_entry = [i, q, j, res_list]
+            # data_list.append(new_entry)
+
+    data_list = sorted(data_list, key=lambda x: x[0])
     # after collecting all the results save the raw data to csv file by using a DataFrame
-    df = pd.DataFrame(data_list, columns=["#", "questions", "iterations", "answers"])
+    df = pd.DataFrame(data_list, columns=["#", "Questions", "Iterations", "Answers"])
     df.index += 1   # so that the "index" (question num) starts at 1
-    df.to_csv(CSV_FILE_PATH + f"raw_data_{NUM_ITR}.csv", index=False)
+    # df.to_csv(CSV_FILE_PATH + f"raw_data_{NUM_ITR}.csv", index=False)
+    df.to_csv(CSV_FILE_PATH + f"raw_data_TEST.csv", index=False)
 
     # process data & get averages
-    df["answers"] = df["answers"].astype("int")
-    grouped = df.groupby("#")["answers"].mean()
-    df_avg = pd.DataFrame(grouped)
-    df_avg.rename({"#": "#", "answers": "avg"}, axis="columns", inplace=True)
-    df_avg.to_csv(CSV_FILE_PATH + f"averages_{NUM_ITR}.csv")
+    df["Answers"] = df["Answers"].astype("int")
+    df_avg = pd.DataFrame(df.groupby("#")["Answers"].mean())
+    df_avg.rename({"#": "#", "Answers": "Averages"}, axis="columns", inplace=True)
+    # df_avg.to_csv(CSV_FILE_PATH + f"averages_{NUM_ITR}.csv")
+    df_avg.to_csv(CSV_FILE_PATH + f"averages_TEST.csv")
 
     # format df for easier further use
-    df["averages"] = df.groupby("#")["answers"].transform("mean")
-    df[["#", "questions",  "averages"]] = df[["#", "questions", "averages"]].mask(df[["#", "questions", "averages"]].duplicated(), "")
+    df["Averages"] = df.groupby("#")["Answers"].transform("mean")
+    df[["#", "Questions",  "Averages"]] = \
+        (df[["#", "Questions", "Averages"]].mask(df[["#", "Questions", "Averages"]].duplicated(), ""))
     print(df)
 
 if __name__ == '__main__':
