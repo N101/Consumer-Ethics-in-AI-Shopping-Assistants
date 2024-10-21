@@ -66,32 +66,35 @@ def extract_question(path: str, regex: str) -> list:
 
     return matches
 
-# function to get completion from GPT
+# function to get completion from GPT & TogetherAI
 def get_response(client, content: str, model="gpt-4o-mini", temperature=1):
     response = client.chat.completions.create(
         model=model,
         temperature=temperature,
         messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": content}],
-        # messages=[{"role": "user", "content": content}]
+        max_completion_tokens=200       # current sys prompt (v2) is 154 tokens long | potential max = 160
     )
     return response
+
 # threading version
 def get_response_t(client, content: str, i: int, j: int, model="gpt-4o-mini", temperature=1):
     response = client.chat.completions.create(
         model=model,
         temperature=temperature,
         messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": content}],
-        # messages=[{"role": "user", "content": content}]
+        max_completion_tokens=200       # could be set lower
     )
+    time.sleep(1)
     # [#, Questions, Iteration, Answer]
     return [i, content, j, response.choices[0].message.content.strip()]
 
-
-def get_response_gemini(client, content: str, max_output_token=256, temperature=1):
+# function to get completion from Google AI Studio
+def get_response_gemini(client, content: str, i: int, j: int, max_output_token=256, temperature=1):
     response = client.generate_content(content)
-    return response
+    return [i, content, j, response.text.strip()]
 
-def get_response_claude(client, content: str, model="claude-3-5-sonnet-20240620",
+# function to get completion from Anthropic
+def get_response_claude(client, content: str, i: int, j: int, model="claude-3-5-sonnet-20240620",
                         max_token=1024, temperature=1):
     response = client.message.create(
         model=model,
@@ -100,11 +103,14 @@ def get_response_claude(client, content: str, model="claude-3-5-sonnet-20240620"
         messages=[{"role": "user", "content": content}],
         temperature=temperature
     )
+    return [i, content, j, response.content.strip()]
 
 def main() -> None:
-    client_gpt = OpenAI(api_key=OPENAI_API_KEY)
+    # instantiate all model clients
+    client_gpt = OpenAI(api_key=OPENAI_API_KEY_HfP)
     client_claude = Anthropic(api_key=ANTHROPIC_API_KEY)
-    client_together = Together(api_key=TOGETHER_AI_API_KEY)
+    # client_together = Together(api_key=TOGETHER_AI_API_KEY)
+    client_together = OpenAI(api_key=TOGETHER_AI_API_KEY, base_url="https://api.together.xyz/v1")
     configure(api_key=GEMINI_API_KEY)
     client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
 
