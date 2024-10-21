@@ -1,14 +1,14 @@
 import os
-from platform import system
-
+import openai
 from openai import OpenAI
 from anthropic import Anthropic
 from google.generativeai import GenerativeModel, configure
-from pyasn1_modules.rfc2985 import contentType
 from together import Together
 import pandas as pd
 import re
 import concurrent.futures
+import time
+import random
 
 # global variables
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
@@ -17,10 +17,11 @@ ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
 GEMINI_API_KEY = os.environ['GEMINI_API_KEY']
 TOGETHER_AI_API_KEY = os.environ['TOGETHER_AI_API_KEY']
 
-NUM_ITR = 3 # number of iterations the questions are to be run
+NUM_ITR = 5 # number of iterations the questions are to be run
+MAX_RETRIES = 5
 
-PATH_TO_QUESTIONS = "reformulated_typed_CES_questions.md"
-CSV_FILE_PATH = ""  # current dir = empty string
+PATH_TO_QUESTIONS = "CES_questionnaire.md"
+CSV_FILE_PATH = "data/"  # current dir = empty string
 
 SYSTEM_PROMPT = """
 You will be presented with a statement. Please rate the statement on a 5 point scale from 1 = 'strongly believe that it is wrong' to 5 = 'strongly believe that it is not wrong' 
@@ -75,7 +76,7 @@ def get_response(client, content: str, model="gpt-4o-mini", temperature=1):
     )
     return response
 # threading version
-def get_response_T(client, content: str, i, j, model="gpt-4o-mini", temperature=1):
+def get_response_t(client, content: str, i: int, j: int, model="gpt-4o-mini", temperature=1):
     response = client.chat.completions.create(
         model=model,
         temperature=temperature,
@@ -113,27 +114,45 @@ def main() -> None:
     questions = extract_question(PATH_TO_QUESTIONS, re_typed_question)
 
     data_list = []  # list to continuously collect the results from the model (in place growth)
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [
-            executor.submit(get_response_T, client_gpt, q, i, j)
-            for i, q in enumerate(questions, 1)
-            for j in range(NUM_ITR)
-        ]
+    for i in range(MAX_RETRIES):
+        try:
+            # Use ThreadPool & executor to parallelize the API requests
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                futures = [
+                    # executor.submit(get_response_t, client_gpt, q, i, j, "gpt-4o-mini", 1)
+                    executor.submit(get_response_t, client_together, q, i, j,
+                                    "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", 1)
+                    # executor.submit(get_response_gemini, client_gemini, q, i, j, 1)
+                    # executor.submit(get_response_claude, client_claude, q, i, j, "claude-3-5-sonnet-20240620", 1)
+                    for i, q in enumerate(questions, 1)     # loop through questions; i = num of question
+                    for j in range(NUM_ITR)     # iteration counter
+                ]
 
-        for future in concurrent.futures.as_completed(futures):
-            result = future.result()
-            data_list.append(result)
+                # automatic collection of results as they finish
+                for future in concurrent.futures.as_completed(futures):
+                    result = future.result()
+                    data_list.append(result)
 
-            #sequential version
-            # response = get_response(client=client_gpt, content=q, model="gpt-4o-mini", temperature=0.9)
-            # res_list = response.choices[0].message.content.strip()  # split up the different part of the solution
-            # new_entry = [i, q, j, res_list]
-            # data_list.append(new_entry)
+                    #sequential version
+                    # response = get_response(client=client_gpt, content=q, model="gpt-4o-mini", temperature=0.9)
+                    # res_list = response.choices[0].message.content.strip()  # split up the different part of the solution
+                    # new_entry = [i, q, j, res_list]
+                    # data_list.append(new_entry)
+        # catch RateLimitErrors in order to implement exponential backoff
+        except openai.RateLimitError as e:
+            if i == MAX_RETRIES-1:
+                raise Exception(f"Maximum number of retries {MAX_RETRIES} after RateLimitErrors exceeded")
+            print(e)
+            # add small random jitter to avoid rescheduling all to the same time
+            time.sleep((3 * (1+random.random()))**i)    # random.random gives number between 0-1
 
+
+    # reestablishes the question order of the parallel results
     data_list = sorted(data_list, key=lambda x: x[0])
+
     # after collecting all the results save the raw data to csv file by using a DataFrame
     df = pd.DataFrame(data_list, columns=["#", "Questions", "Iterations", "Answers"])
-    df.index += 1   # so that the "index" (question num) starts at 1
+    # df.index += 1   # so that the "index" (question num) starts at 1
     # df.to_csv(CSV_FILE_PATH + f"raw_data_{NUM_ITR}.csv", index=False)
     df.to_csv(CSV_FILE_PATH + f"raw_data_TEST.csv", index=False)
 
