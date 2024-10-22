@@ -25,6 +25,7 @@
 ### No harm, no foul
 - Installing software on your computer without buying it 
 - "Burning" a CD rather than buying it
+- Returning merchandise after buying it and not liking it
 - Taping a movie off the television
 - Spending over and hour trying on clothing and not buying anything
 
@@ -39,6 +40,7 @@
 - Recycling materials such as cans, bottles, newspapers, etc.
 
 ### Doing the right thing/doing good
+- Returning to the store and paying for an item that the cashier mistakenly did not charge you for
 - Correcting a bill that has been miscalculated in your favor
 - Giving a larger than expected tip to a waiter or waitress
 - Not purchasing products from companies that you believe don't treat their employees fairly
