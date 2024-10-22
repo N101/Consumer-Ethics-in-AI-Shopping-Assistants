@@ -17,7 +17,7 @@ ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
 GEMINI_API_KEY = os.environ['GEMINI_API_KEY']
 TOGETHER_AI_API_KEY = os.environ['TOGETHER_AI_API_KEY']
 
-NUM_ITR = 5 # number of iterations the questions are to be run
+NUM_ITR = 100 # number of iterations the questions are to be run
 MAX_RETRIES = 5
 
 PATH_TO_QUESTIONS = "CES_questionnaire.md"
@@ -84,7 +84,7 @@ def get_response_t(client, content: str, i: int, j: int, model="gpt-4o-mini", te
         messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": content}],
         max_completion_tokens=200       # could be set lower
     )
-    time.sleep(1)
+    # time.sleep(1)
     # [#, Questions, Iteration, Answer]
     return [i, content, j, response.choices[0].message.content.strip()]
 
@@ -115,23 +115,22 @@ def main() -> None:
     client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
 
     # make regex to extract questions correctly
-    re_context_question = r'.*Contextualized version\*\*:\s*"([^"]+)"'
     re_typed_question = r'^- (.+)$'
     questions = extract_question(PATH_TO_QUESTIONS, re_typed_question)
 
     data_list = []  # list to continuously collect the results from the model (in place growth)
-    for i in range(MAX_RETRIES):
+    for retry in range(MAX_RETRIES):
         try:
             # Use ThreadPool & executor to parallelize the API requests
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:     # default value = 6
                 futures = [
-                    # executor.submit(get_response_t, client_gpt, q, i, j, "gpt-4o-mini", 1)
-                    executor.submit(get_response_t, client_together, q, i, j,
-                                    "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", 1)
+                    executor.submit(get_response_t, client_gpt, q, i, j, "gpt-4o-mini", 1)
+                    # executor.submit(get_response_t, client_together, q, i, j,
+                    #                 "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", 1)
                     # executor.submit(get_response_gemini, client_gemini, q, i, j, 1)
                     # executor.submit(get_response_claude, client_claude, q, i, j, "claude-3-5-sonnet-20240620", 1)
                     for i, q in enumerate(questions, 1)     # loop through questions; i = num of question
-                    for j in range(NUM_ITR)     # iteration counter
+                    for j in range(NUM_ITR)     # iterations loop
                 ]
 
                 # automatic collection of results as they finish
@@ -139,18 +138,15 @@ def main() -> None:
                     result = future.result()
                     data_list.append(result)
 
-                    #sequential version
-                    # response = get_response(client=client_gpt, content=q, model="gpt-4o-mini", temperature=0.9)
-                    # res_list = response.choices[0].message.content.strip()  # split up the different part of the solution
-                    # new_entry = [i, q, j, res_list]
-                    # data_list.append(new_entry)
+            # if successful, break out of retry loop
+            break
         # catch RateLimitErrors in order to implement exponential backoff
         except openai.RateLimitError as e:
-            if i == MAX_RETRIES-1:
+            if retry == MAX_RETRIES-1:
                 raise Exception(f"Maximum number of retries {MAX_RETRIES} after RateLimitErrors exceeded")
             print(e)
             # add small random jitter to avoid rescheduling all to the same time
-            time.sleep((3 * (1+random.random()))**i)    # random.random gives number between 0-1
+            time.sleep((3 * (1+random.random())) ** retry)    # random.random gives number between 0-1
 
 
     # reestablishes the question order of the parallel results
@@ -159,15 +155,15 @@ def main() -> None:
     # after collecting all the results save the raw data to csv file by using a DataFrame
     df = pd.DataFrame(data_list, columns=["#", "Questions", "Iterations", "Answers"])
     # df.index += 1   # so that the "index" (question num) starts at 1
-    # df.to_csv(CSV_FILE_PATH + f"raw_data_{NUM_ITR}.csv", index=False)
-    df.to_csv(CSV_FILE_PATH + f"raw_data_TEST.csv", index=False)
+    df.to_csv(CSV_FILE_PATH + f"raw_data_GPT_{NUM_ITR}_v2_temp1.4.csv", index=False)
+    # df.to_csv(CSV_FILE_PATH + f"raw_data_TEST.csv", index=False)
 
     # process data & get averages
     df["Answers"] = df["Answers"].astype("int")
     df_avg = pd.DataFrame(df.groupby("#")["Answers"].mean())
     df_avg.rename({"#": "#", "Answers": "Averages"}, axis="columns", inplace=True)
-    # df_avg.to_csv(CSV_FILE_PATH + f"averages_{NUM_ITR}.csv")
-    df_avg.to_csv(CSV_FILE_PATH + f"averages_TEST.csv")
+    df_avg.to_csv(CSV_FILE_PATH + f"averages_GPT_{NUM_ITR}_v2_temp1.4.csv")
+    # df_avg.to_csv(CSV_FILE_PATH + f"averages_TEST.csv")
 
     # format df for easier further use
     df["Averages"] = df.groupby("#")["Answers"].transform("mean")
