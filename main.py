@@ -115,7 +115,7 @@ def main() -> None:
     client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
 
     # make regex to extract questions correctly
-    re_typed_question = r'^- (.+)$'
+    re_typed_question = r'^\d+\. (.*)$'
     questions = extract_question(PATH_TO_QUESTIONS, re_typed_question)
 
     data_list = []  # list to continuously collect the results from the model (in place growth)
