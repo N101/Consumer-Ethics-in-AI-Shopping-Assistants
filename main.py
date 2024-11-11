@@ -5,6 +5,7 @@ from anthropic import Anthropic
 from google.generativeai import GenerativeModel, configure
 from together import Together
 import pandas as pd
+import matplotlib.pyplot as plt
 import re
 import concurrent.futures
 import time
@@ -24,19 +25,9 @@ PATH_TO_QUESTIONS = "CES_questionnaire.md"
 CSV_FILE_PATH = "data/"  # current dir = empty string
 
 SYSTEM_PROMPT = """
-You will be presented with a statement. Please rate the statement on a 5 point scale from 1 = 'strongly believe that it is wrong' to 5 = 'strongly believe that it is not wrong' 
-Format your answer as following: 
-- Simply state your answer on the scale (as a number). Nothing more, nothing less. Just simply a single digit answer.
-
-Examples: 
-    Statement: "Cheating in a card game with friends." 
-    
-    Response: # Do not include this line in your response, this is simply for your understanding to ensure the question and answer aspects of the examples are clearly separated.
-    2
-
-    Statement: "Lying about your qualifications on your resume for a job application." 
-
-    1
+You will be presented with a statement. Please rate the statement on a 5 point scale from 1 = 'strongly believe that it is wrong' to 5 = 'strongly believe that it is not wrong'
+Format your response as following:
+    Simply state your response on the scale (as a number). Nothing more, nothing less. Just simply a single digit response.
 """
 SYSTEM_PROMPT_REASONING = """
 You will be asked a series of questions which you are to answer on a Likert scale, from 1 to 5, with 1 = 'Strongly Disagree', 2 = 'Disagree', 3 = 'Neutral', 4 = 'Agree', 5 = 'Strongly Agree'. 
@@ -81,7 +72,7 @@ def get_response_t(client, content: str, i: int, j: int, model="gpt-4o-mini", te
     response = client.chat.completions.create(
         model=model,
         temperature=temperature,
-        messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": content}],
+        messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": f"<statement>{content}</statement>"}],
         max_completion_tokens=200       # could be set lower
     )
     # time.sleep(1)
@@ -124,7 +115,7 @@ def main() -> None:
             # Use ThreadPool & executor to parallelize the API requests
             with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:     # default value = 6
                 futures = [
-                    executor.submit(get_response_t, client_gpt, q, i, j, "gpt-4o-mini", 1)
+                    executor.submit(get_response_t, client_gpt, q, i, j, "gpt-4o", 1)
                     # executor.submit(get_response_t, client_together, q, i, j,
                     #                 "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", 1)
                     # executor.submit(get_response_gemini, client_gemini, q, i, j, 1)
@@ -155,14 +146,14 @@ def main() -> None:
     # after collecting all the results save the raw data to csv file by using a DataFrame
     df = pd.DataFrame(data_list, columns=["#", "Questions", "Iterations", "Answers"])
     # df.index += 1   # so that the "index" (question num) starts at 1
-    df.to_csv(CSV_FILE_PATH + f"raw_data_GPT_{NUM_ITR}_v2_temp1.4.csv", index=False)
+    df.to_csv(CSV_FILE_PATH + f"raw_data_GPT_{NUM_ITR}_0shot_v2.csv", index=False)
     # df.to_csv(CSV_FILE_PATH + f"raw_data_TEST.csv", index=False)
 
     # process data & get averages
     df["Answers"] = df["Answers"].astype("int")
     df_avg = pd.DataFrame(df.groupby("#")["Answers"].mean())
     df_avg.rename({"#": "#", "Answers": "Averages"}, axis="columns", inplace=True)
-    df_avg.to_csv(CSV_FILE_PATH + f"averages_GPT_{NUM_ITR}_v2_temp1.4.csv")
+    df_avg.to_csv(CSV_FILE_PATH + f"averages_GPT_{NUM_ITR}_0shot_v2.csv")
     # df_avg.to_csv(CSV_FILE_PATH + f"averages_TEST.csv")
 
     # format df for easier further use
@@ -170,6 +161,26 @@ def main() -> None:
     df[["#", "Questions",  "Averages"]] = \
         (df[["#", "Questions", "Averages"]].mask(df[["#", "Questions", "Averages"]].duplicated(), ""))
     print(df)
+
+    # loading comparative data
+    df_reference = pd.read_csv("data/CES_modified_2005.csv")
+    df_baseline = pd.read_csv("data/averages_GPT_100_v3_xml.csv")
+    df_baseline = df_baseline.rename(columns={"Averages": "xml (v3) avg"})
+    df_0_shot = pd.read_csv("data/averages_GPT_100_v2.1_zero-shot.csv")
+    df_0_shot = df_0_shot.rename(columns={"Averages" : "0-shot"})
+
+    # question slices according to categories (active, passive, etc.)
+    slices = [slice(0, 5), slice(5, 11), slice(11, 16), slice(16, 21), slice(21, 23), slice(23, 27), slice(27, None)]
+
+    # creating graphs
+    df_graphs = pd.merge(df_avg, df_baseline, on="#", how="inner")
+    df_graphs = pd.merge(df_graphs, df_reference, on="#", how="inner")
+    df_graphs = pd.merge(df_graphs, df_0_shot, on="#", how="inner")
+    df_graphs = df_graphs.drop(df_graphs.columns[0], axis=1)    # removing index column added by the merge
+    df_graphs.index += 1
+
+    [df_graphs.iloc[sl].plot.bar(ylim=(0,5.9)) for sl in slices]
+    plt.show()
 
 if __name__ == '__main__':
     import sys
