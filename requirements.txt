@@ -1,0 +1,12 @@
+numpy
+pandas
+matplotlib
+regex
+jupyter
+openai
+anthropic==0.39.0
+google-generativeai==0.8.3
+together==1.3.3
+langchain==0.3.7
+langgraph==0.2.45
+langsmith
