@@ -22,7 +22,7 @@ NUM_ITR = 100 # number of iterations the questions are to be run
 MAX_RETRIES = 5
 
 PATH_TO_QUESTIONS = "CES_questionnaire.md"
-CSV_FILE_PATH = "data/"  # current dir = empty string
+DATA_STORAGE_PATH = "data/"
 
 SYSTEM_PROMPT = """
 You will be presented with a statement. Please rate the statement on a 5 point scale from 1 = 'strongly believe that it is wrong' to 5 = 'strongly believe that it is not wrong'
@@ -115,7 +115,7 @@ def main() -> None:
             # Use ThreadPool & executor to parallelize the API requests
             with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:     # default value = 6
                 futures = [
-                    executor.submit(get_response_t, client_gpt, q, i, j, "gpt-4o", 1)
+                    executor.submit(get_response_t, client_gpt, q, i, j, "gpt-4o-mini", 1)
                     # executor.submit(get_response_t, client_together, q, i, j,
                     #                 "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", 1)
                     # executor.submit(get_response_gemini, client_gemini, q, i, j, 1)
@@ -145,42 +145,54 @@ def main() -> None:
 
     # after collecting all the results save the raw data to csv file by using a DataFrame
     df = pd.DataFrame(data_list, columns=["#", "Questions", "Iterations", "Answers"])
-    # df.index += 1   # so that the "index" (question num) starts at 1
-    df.to_csv(CSV_FILE_PATH + f"raw_data_GPT_{NUM_ITR}_0shot_v2.csv", index=False)
-    # df.to_csv(CSV_FILE_PATH + f"raw_data_TEST.csv", index=False)
+    df.to_csv(DATA_STORAGE_PATH + f"raw_data_GPT_{NUM_ITR}.csv", index=False)
+    # df.to_csv(DATA_STORAGE_PATH + f"raw_data_TEST.csv", index=False)
 
     # process data & get averages
     df["Answers"] = df["Answers"].astype("int")
     df_avg = pd.DataFrame(df.groupby("#")["Answers"].mean())
-    df_avg.rename({"#": "#", "Answers": "Averages"}, axis="columns", inplace=True)
-    df_avg.to_csv(CSV_FILE_PATH + f"averages_GPT_{NUM_ITR}_0shot_v2.csv")
-    # df_avg.to_csv(CSV_FILE_PATH + f"averages_TEST.csv")
+    df_avg.rename({"Answers": "Averages"}, axis="columns", inplace=True)
+    df_avg["std"] = df.groupby("#")["Answers"].std()
+    df_avg.to_csv(DATA_STORAGE_PATH + f"averages_GPT_{NUM_ITR}.csv")
+    # df_avg.to_csv(DATA_STORAGE_PATH + f"averages_TEST.csv")
 
-    # format df for easier further use
-    df["Averages"] = df.groupby("#")["Answers"].transform("mean")
-    df[["#", "Questions",  "Averages"]] = \
-        (df[["#", "Questions", "Averages"]].mask(df[["#", "Questions", "Averages"]].duplicated(), ""))
-    print(df)
 
     # loading comparative data
     df_reference = pd.read_csv("data/CES_modified_2005.csv")
-    df_baseline = pd.read_csv("data/averages_GPT_100_v3_xml.csv")
-    df_baseline = df_baseline.rename(columns={"Averages": "xml (v3) avg"})
-    df_0_shot = pd.read_csv("data/averages_GPT_100_v2.1_zero-shot.csv")
-    df_0_shot = df_0_shot.rename(columns={"Averages" : "0-shot"})
-
-    # question slices according to categories (active, passive, etc.)
-    slices = [slice(0, 5), slice(5, 11), slice(11, 16), slice(16, 21), slice(21, 23), slice(23, 27), slice(27, None)]
 
     # creating graphs
-    df_graphs = pd.merge(df_avg, df_baseline, on="#", how="inner")
-    df_graphs = pd.merge(df_graphs, df_reference, on="#", how="inner")
-    df_graphs = pd.merge(df_graphs, df_0_shot, on="#", how="inner")
+    df_avg.drop("std", axis=1, inplace=True)
+    df_graphs = pd.merge(df_avg, df_reference, on="#", how="inner")
     df_graphs = df_graphs.drop(df_graphs.columns[0], axis=1)    # removing index column added by the merge
     df_graphs.index += 1
 
-    [df_graphs.iloc[sl].plot.bar(ylim=(0,5.9)) for sl in slices]
+    # question slices according to categories (active, passive, etc.)
+    slices = [slice(0, 5), slice(5, 11), slice(11, 16), slice(16, 21), slice(21, 23), slice(23, 27), slice(27, None)]
+    labels = ["active", "passive", "questionable", "no harm", "downloading", "recycling", "doing good"]
+    colors = ['blue' if col == 'students' else 'lightblue' if col == 'non-students' else 'red' for col in df_graphs.columns]
+
+    # calculating errors for error bars (standard deviation)
+    df_errors = pd.DataFrame(0, index=df_graphs.index, columns=df_graphs.columns)
+    df_errors["Averages"] = df.groupby("#")["Answers"].std()
+
+    # plotting the graphs
+    for sl, lbl in zip(slices, labels):
+        df_graphs.iloc[sl].plot(
+            kind='bar',
+            ylim=(0, 5.9),
+            yerr=df_errors,
+            capsize=3,
+            ecolor='darkred',
+            color=['#2ca02c', '#4682b4', '#5a9bd4'],
+        ).legend(['GPT-4o-mini', 'Students', 'Non-students'])
+        plt.xlabel('Questions')
+        plt.ylabel('Score')
+        plt.tight_layout()
+        plt.savefig(f"{DATA_STORAGE_PATH}plot_{lbl}.png")
+
     plt.show()
+
+    plt.close('all')
 
 if __name__ == '__main__':
     import sys
