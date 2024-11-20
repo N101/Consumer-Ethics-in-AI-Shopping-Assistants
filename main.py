@@ -6,6 +6,7 @@ from google.generativeai import GenerativeModel, configure
 from together import Together
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 import re
 import concurrent.futures
 import time
@@ -141,6 +142,7 @@ def main() -> None:
 
 
     # reestablishes the question order of the parallel results
+    data_list = sorted(data_list, key=lambda x: x[2])
     data_list = sorted(data_list, key=lambda x: x[0])
 
     # after collecting all the results save the raw data to csv file by using a DataFrame
@@ -159,9 +161,15 @@ def main() -> None:
 
     # loading comparative data
     df_reference = pd.read_csv("data/CES_modified_2005.csv")
+    df_avg.drop("std", axis=1, inplace=True)
+
+    # create a heat map of all the raw data 
+    pivot_table = df.pivot_table(values='Answers', index='Iterations', columns='#')
+    sns.heatmap(pivot_table, cmap='viridis', cbar_kws={'label': 'Answers'})
+    plt.title('Heatmap')
+    plt.savefig(f"{DATA_STORAGE_PATH}heatmap_GPT-3.5-turbo.png")
 
     # creating graphs
-    df_avg.drop("std", axis=1, inplace=True)
     df_graphs = pd.merge(df_avg, df_reference, on="#", how="inner")
     df_graphs = df_graphs.drop(df_graphs.columns[0], axis=1)    # removing index column added by the merge
     df_graphs.index += 1
@@ -184,7 +192,8 @@ def main() -> None:
             capsize=3,
             ecolor='darkred',
             color=['#2ca02c', '#4682b4', '#5a9bd4'],
-        ).legend(['GPT-4o-mini', 'Students', 'Non-students'])
+        ).legend(['GPT-3.5-turbo', 'Students', 'Non-students'])
+        plt.title(f'{lbl.capitalize()} questions')
         plt.xlabel('Questions')
         plt.ylabel('Score')
         plt.tight_layout()
@@ -193,6 +202,8 @@ def main() -> None:
     plt.show()
 
     plt.close('all')
+
+    # TODO generate a report of the results
 
 if __name__ == '__main__':
     import sys
