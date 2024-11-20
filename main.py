@@ -24,6 +24,7 @@ MAX_RETRIES = 5
 
 PATH_TO_QUESTIONS = "CES_questionnaire.md"
 DATA_STORAGE_PATH = "data/"
+SUFFIX = "GPT-3.5-turbo"
 
 SYSTEM_PROMPT = """
 You will be presented with a statement. Please rate the statement on a 5 point scale from 1 = 'strongly believe that it is wrong' to 5 = 'strongly believe that it is not wrong'
@@ -147,7 +148,7 @@ def main() -> None:
 
     # after collecting all the results save the raw data to csv file by using a DataFrame
     df = pd.DataFrame(data_list, columns=["#", "Questions", "Iterations", "Answers"])
-    df.to_csv(DATA_STORAGE_PATH + f"raw_data_GPT_{NUM_ITR}.csv", index=False)
+    df.to_csv(DATA_STORAGE_PATH + f"raw_data_{SUFFIX}.csv", index=False)
     # df.to_csv(DATA_STORAGE_PATH + f"raw_data_TEST.csv", index=False)
 
     # process data & get averages
@@ -155,7 +156,7 @@ def main() -> None:
     df_avg = pd.DataFrame(df.groupby("#")["Answers"].mean())
     df_avg.rename({"Answers": "Averages"}, axis="columns", inplace=True)
     df_avg["std"] = df.groupby("#")["Answers"].std()
-    df_avg.to_csv(DATA_STORAGE_PATH + f"averages_GPT_{NUM_ITR}.csv")
+    df_avg.to_csv(DATA_STORAGE_PATH + f"averages_{SUFFIX}.csv")
     # df_avg.to_csv(DATA_STORAGE_PATH + f"averages_TEST.csv")
 
 
@@ -167,7 +168,7 @@ def main() -> None:
     pivot_table = df.pivot_table(values='Answers', index='Iterations', columns='#')
     sns.heatmap(pivot_table, cmap='viridis', cbar_kws={'label': 'Answers'})
     plt.title('Heatmap')
-    plt.savefig(f"{DATA_STORAGE_PATH}heatmap_GPT-3.5-turbo.png")
+    plt.savefig(f"{DATA_STORAGE_PATH}heatmap_{SUFFIX}.png")
 
     # creating graphs
     df_graphs = pd.merge(df_avg, df_reference, on="#", how="inner")
@@ -177,7 +178,6 @@ def main() -> None:
     # question slices according to categories (active, passive, etc.)
     slices = [slice(0, 5), slice(5, 11), slice(11, 16), slice(16, 21), slice(21, 23), slice(23, 27), slice(27, None)]
     labels = ["active", "passive", "questionable", "no harm", "downloading", "recycling", "doing good"]
-    colors = ['blue' if col == 'students' else 'lightblue' if col == 'non-students' else 'red' for col in df_graphs.columns]
 
     # calculating errors for error bars (standard deviation)
     df_errors = pd.DataFrame(0, index=df_graphs.index, columns=df_graphs.columns)
@@ -192,12 +192,12 @@ def main() -> None:
             capsize=3,
             ecolor='darkred',
             color=['#2ca02c', '#4682b4', '#5a9bd4'],
-        ).legend(['GPT-3.5-turbo', 'Students', 'Non-students'])
+        ).legend([f'{SUFFIX}', 'Students', 'Non-students'])
         plt.title(f'{lbl.capitalize()} questions')
         plt.xlabel('Questions')
         plt.ylabel('Score')
         plt.tight_layout()
-        plt.savefig(f"{DATA_STORAGE_PATH}plot_{lbl}.png")
+        plt.savefig(f"{DATA_STORAGE_PATH}plot_{lbl}_{SUFFIX}.png") 
 
     plt.show()
 
