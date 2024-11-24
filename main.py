@@ -197,7 +197,7 @@ def main() -> None:
         plt.xlabel('Questions')
         plt.ylabel('Score')
         plt.tight_layout()
-        plt.savefig(f"{DATA_STORAGE_PATH}plot_{lbl}_{SUFFIX}.png") 
+        plt.savefig(f"{DATA_STORAGE_PATH}{SUFFIX}_plot_{lbl}.png") 
 
     plt.show()
 
