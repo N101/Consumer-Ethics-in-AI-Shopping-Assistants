@@ -1,4 +1,5 @@
 import os
+import io
 import openai
 from openai import OpenAI
 from anthropic import Anthropic
@@ -11,20 +12,21 @@ import re
 import concurrent.futures
 import time
 import random
+from fpdf import FPDF
 
 # global variables
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+# OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 OPENAI_API_KEY_HfP = os.environ['OPENAI_API_KEY_HfP']
-ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
-GEMINI_API_KEY = os.environ['GEMINI_API_KEY']
-TOGETHER_AI_API_KEY = os.environ['TOGETHER_AI_API_KEY']
+# ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
+# GEMINI_API_KEY = os.environ['GEMINI_API_KEY']
+# TOGETHER_AI_API_KEY = os.environ['TOGETHER_AI_API_KEY']
 
-NUM_ITR = 100 # number of iterations the questions are to be run
+NUM_ITR = 10 # number of iterations the questions are to be run
 MAX_RETRIES = 5
 
-PATH_TO_QUESTIONS = "CES_questionnaire.md"
-DATA_STORAGE_PATH = "data/"
-SUFFIX = "GPT-3.5-turbo"
+PATH_TO_QUESTIONS = "/Users/noah.kieferdiaz/Documents/Uni/BA_Thesis/LLM-consumer-ethics/resources/CES_questionnaire.md"
+DATA_STORAGE_PATH = ""
+SUFFIX = "GPT-4o-mini"
 
 SYSTEM_PROMPT = """
 You will be presented with a statement. Please rate the statement on a 5 point scale from 1 = 'strongly believe that it is wrong' to 5 = 'strongly believe that it is not wrong'
@@ -101,11 +103,11 @@ def get_response_claude(client, content: str, i: int, j: int, model="claude-3-5-
 def main() -> None:
     # instantiate all model clients
     client_gpt = OpenAI(api_key=OPENAI_API_KEY_HfP)
-    client_claude = Anthropic(api_key=ANTHROPIC_API_KEY)
+    # client_claude = Anthropic(api_key=ANTHROPIC_API_KEY)
     # client_together = Together(api_key=TOGETHER_AI_API_KEY)
-    client_together = OpenAI(api_key=TOGETHER_AI_API_KEY, base_url="https://api.together.xyz/v1")
-    configure(api_key=GEMINI_API_KEY)
-    client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
+    # client_together = OpenAI(api_key=TOGETHER_AI_API_KEY, base_url="https://api.together.xyz/v1")
+    # configure(api_key=GEMINI_API_KEY)
+    # client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
 
     # make regex to extract questions correctly
     re_typed_question = r'^\d+\. (.*)$'
@@ -143,32 +145,56 @@ def main() -> None:
 
 
     # reestablishes the question order of the parallel results
-    data_list = sorted(data_list, key=lambda x: x[2])
-    data_list = sorted(data_list, key=lambda x: x[0])
+    data_list = sorted(data_list, key=lambda x: (x[0], x[2]))
+    # data_list = sorted(data_list, key=lambda x: x[0])
 
     # after collecting all the results save the raw data to csv file by using a DataFrame
     df = pd.DataFrame(data_list, columns=["#", "Questions", "Iterations", "Answers"])
-    df.to_csv(DATA_STORAGE_PATH + f"raw_data_{SUFFIX}.csv", index=False)
-    # df.to_csv(DATA_STORAGE_PATH + f"raw_data_TEST.csv", index=False)
+    # df.to_csv(DATA_STORAGE_PATH + f"raw_data_{SUFFIX}.csv", index=False)
+    df.to_csv(DATA_STORAGE_PATH + f"raw_data_TEST.csv", index=False)
 
     # process data & get averages
     df["Answers"] = df["Answers"].astype("int")
     df_avg = pd.DataFrame(df.groupby("#")["Answers"].mean())
     df_avg.rename({"Answers": "Averages"}, axis="columns", inplace=True)
     df_avg["std"] = df.groupby("#")["Answers"].std()
-    df_avg.to_csv(DATA_STORAGE_PATH + f"averages_{SUFFIX}.csv")
-    # df_avg.to_csv(DATA_STORAGE_PATH + f"averages_TEST.csv")
+    # df_avg.to_csv(DATA_STORAGE_PATH + f"averages_{SUFFIX}.csv")
+    df_avg.to_csv(DATA_STORAGE_PATH + f"averages_TEST.csv")
 
 
     # loading comparative data
-    df_reference = pd.read_csv("data/CES_modified_2005.csv")
+    df_reference = pd.read_csv("/Users/noah.kieferdiaz/Documents/Uni/BA_Thesis/LLM-consumer-ethics/resources/data/CES_modified_2005.csv")
     df_avg.drop("std", axis=1, inplace=True)
+
+
+    # Generate the evaluation report
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Add averages table to the PDF
+    pdf.cell(200, 10, txt="Averages Table", ln=True, align='C')
+    pdf.ln(10)
+    col_width = pdf.w / 2  # Width of each column
+    row_height = pdf.font_size * 1.25
+    for i in range(0, len(df_avg), 2):
+        pdf.cell(col_width, row_height, txt=f"Question {i+1}: {df_avg.iloc[i, 0]:.2f}", border=1)
+        if i+1 < len(df_avg):
+            pdf.cell(col_width, row_height, txt=f"Question {i+2}: {df_avg.iloc[i+1, 0]:.2f}", border=1)
+        pdf.ln(row_height)
+
 
     # create a heat map of all the raw data 
     pivot_table = df.pivot_table(values='Answers', index='Iterations', columns='#')
     sns.heatmap(pivot_table, cmap='viridis', cbar_kws={'label': 'Answers'})
     plt.title('Heatmap')
     plt.savefig(f"{DATA_STORAGE_PATH}heatmap_{SUFFIX}.png")
+    heatmap_path = f"{DATA_STORAGE_PATH}heatmap_{SUFFIX}.png"
+    pdf.add_page()
+    pdf.cell(200, 10, txt="Heatmap", ln=True, align='C')
+    pdf.image(heatmap_path, x=10, y=30, w=190)
+
 
     # creating graphs
     df_graphs = pd.merge(df_avg, df_reference, on="#", how="inner")
@@ -183,8 +209,10 @@ def main() -> None:
     df_errors = pd.DataFrame(0, index=df_graphs.index, columns=df_graphs.columns)
     df_errors["Averages"] = df.groupby("#")["Answers"].std()
 
-    # plotting the graphs
+    # plotting the graphs and adding them to the PDF
+    images = []
     for sl, lbl in zip(slices, labels):
+        plot_path = f"{DATA_STORAGE_PATH}{SUFFIX}_plot_{lbl}.png"
         df_graphs.iloc[sl].plot(
             kind='bar',
             ylim=(0, 5.9),
@@ -197,9 +225,32 @@ def main() -> None:
         plt.xlabel('Questions')
         plt.ylabel('Score')
         plt.tight_layout()
-        plt.savefig(f"{DATA_STORAGE_PATH}{SUFFIX}_plot_{lbl}.png") 
+        plt.savefig(plot_path)
+        images.append(plot_path)
+        plt.close()
 
-    plt.show()
+    # Add images to PDF, 2 per row, max 2 pages
+    pdf.add_page()
+    pdf.cell(200, 10, txt="Graphs", ln=True, align='C')
+    pdf.ln(10)
+    x_offset = 10
+    y_offset = 30
+    img_width = 90
+    img_height = 60
+    for i, img in enumerate(images):
+        if i > 0 and i % 4 == 0:
+            pdf.add_page()
+            y_offset = 30
+        if i % 2 == 0 and i % 4 != 0:
+            y_offset += img_height + 10
+            x_offset = 10
+        elif i % 2 != 0:
+            x_offset = 110
+        pdf.image(img, x=x_offset, y=y_offset, w=img_width, h=img_height)
+
+    # Save the PDF
+    pdf_output_path = f"{DATA_STORAGE_PATH}evaluation_report_{SUFFIX}.pdf"
+    pdf.output(pdf_output_path)
 
     plt.close('all')
 
