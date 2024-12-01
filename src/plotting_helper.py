@@ -35,8 +35,8 @@ def make_graphs(
 
 def make_heatmap(df: pd.DataFrame) -> plt.Figure:
     fig, ax = plt.subplots()
-    pivot_table = df.pivot_table(values="Response", index="Iterations", columns="#")
+    pivot_table = df.pivot_table(values="Response", index="Iteration", columns="#")
     sns.heatmap(pivot_table, cmap="viridis", cbar_kws={"label": "Responses"}, ax=ax)
-    fig.title(f"Heatmap {SUFFIX}")
+    ax.set_title(f"Heatmap {SUFFIX}")
     fig.tight_layout()
     return fig

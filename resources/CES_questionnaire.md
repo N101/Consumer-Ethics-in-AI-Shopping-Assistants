@@ -16,7 +16,7 @@
 11. Observing someone shoplifting and ignoring it
 
 ### Questionable, but legal actions
-12. Using an expired coupon for merchandise 
+12. Using an expired coupon for merchandise
 13. Returning merchandise to a store by claiming that it was a gift when it was not
 14. Using a coupon for merchandise you did not buy
 15. Not telling the truth when negotiating the price of a new automobile
@@ -24,13 +24,13 @@
 
 ### No harm, no foul
 17. Installing software on your computer without buying it
-18. "Burning" a CD rather than buying it 
-19. Returning merchandise after buying it and not liking it 
-20. Taping a movie off the television 
+18. "Burning" a CD rather than buying it
+19. Returning merchandise after buying it and not liking it
+20. Taping a movie off the television
 21. Spending over an hour trying on clothing and not buying anything
 
 ### Downloading copyrighted materials/buying counterfeit goods
-22. Downloading music from the internet instead of buying it 
+22. Downloading music from the internet instead of buying it
 23. Buying counterfeit goods instead of buying the original manufacturers' brands
 
 ### Recycling/environmental awareness
