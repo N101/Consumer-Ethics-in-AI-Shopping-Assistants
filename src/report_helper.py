@@ -27,7 +27,7 @@ def save_state(prefix, counter):
 
 def init_pdf() -> FPDF:
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.set_margins(left=25.4, top=25.4, right=25.4)  # Set A4 default margins (25.4 mm)
     pdf.add_page()
     pdf.set_font("Times", size=12)
