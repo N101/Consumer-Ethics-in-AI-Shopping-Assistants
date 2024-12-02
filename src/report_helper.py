@@ -11,10 +11,6 @@ def load_state(prefix) -> tuple:
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, 'r') as f:
             state = json.load(f)
-            print(state)
-            # print(state[prefix])
-            for key in state.keys():
-                print(key)
             if prefix in state.keys():
                 return prefix, state[prefix]
     return "", 1
@@ -31,12 +27,11 @@ def save_state(prefix, counter):
 
 def init_pdf() -> FPDF:
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_auto_page_break(auto=True, margin=20)
     pdf.set_margins(left=25.4, top=25.4, right=25.4)  # Set A4 default margins (25.4 mm)
     pdf.add_page()
     pdf.set_font("Times", size=12)
     pdf.set_y(25.4)  # Ensure the top margin is set correctly
-    # pdf.set_x(25.4)  # Ensure the left margin is set correctly
     return pdf
 
 
