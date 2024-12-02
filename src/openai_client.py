@@ -25,8 +25,6 @@ client_together = OpenAI(api_key=TOGETHER_AI_API_KEY, base_url="https://api.toge
 configure(api_key=GEMINI_API_KEY)
 client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
 
-print(f"PYTHONPATH = {os.getenv("PYTHONPATH")}")
-
 
 # GPT
 def get_response(content: str, model="gpt-4o-mini", temperature=1):
