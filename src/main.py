@@ -14,7 +14,7 @@ from openai_client import get_response_t, get_response_gemini
 from plotting_helper import make_graphs, make_heatmap
 from report_helper import init_pdf, create_pdf_report
 
-NUM_ITR = 10
+NUM_ITR = 5
 MAX_RETRIES = 3
 SUFFIX = ""
 
@@ -59,7 +59,7 @@ def evaluate_CES(model: str, llm: str) -> list:
         try:
             futures = []
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                for i, q in enumerate(questions):
+                for i, q in enumerate(questions, 1):
                     for j in range(NUM_ITR):
                         futures.append(executor.submit(get_response, q, i, j, llm))
 
@@ -90,7 +90,7 @@ def evaluate_CES(model: str, llm: str) -> list:
     return data_list
 
 
-def get_data(data_list: list):
+def get_data(data_list: list) -> list:
     # save raw data to csv
     df = pd.DataFrame(data_list, columns=["#", "Question", "Iteration", "Response"])
     # df.to_csv(f"{DATA_FOLDER_PATH}/raw_data/{SUFFIX}_raw_data.csv", index=False)
@@ -103,16 +103,12 @@ def get_data(data_list: list):
     avgs["std"] = df.groupby("#")["Response"].std()
     # avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/{SUFFIX}_averages.csv")
     avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/TEST_averages.csv")
-
-    # calculating errors for error bars (standard deviation)
-    errors = pd.DataFrame(0, index=graphs.index, columns=graphs.columns)
-    errors["Averages"] = avgs["std"]
     avgs.drop("std", axis=1, inplace=True)
 
 
     # load reference data
     ref = pd.read_csv(f"{DATA_FOLDER_PATH}/CES_modified_2005.csv")
-    print("creating graphs")
+    print("\tcreating graphs...")
 
 
     # create graphs of the averages
@@ -123,19 +119,19 @@ def get_data(data_list: list):
     slices = [slice(0, 5), slice(5, 11), slice(11, 16), slice(16, 21), slice(21, 23), slice(23, 27), slice(27, None)]
     labels = ["active", "passive", "questionable", "no harm", "downloading", "recycling", "doing good"]
 
+    # calculating errors for error bars (standard deviation)
+    errors = pd.DataFrame(0, index=graphs.index, columns=graphs.columns)
+    errors["Averages"] = df.groupby("#")["Response"].std()
+    print(errors["Averages"])
+
     images = make_graphs(graphs, slices, labels, errors, SUFFIX)
 
     # create heatmap of the raw data
     images.append(make_heatmap(df))
 
-    # show and close all figures
-    for img in images:
-        img.show()
-    plt.close('all')
-
 
     # create pdf report
-
+    return avgs, images
 
 
 if __name__ == "__main__":
@@ -158,9 +154,13 @@ if __name__ == "__main__":
     SUFFIX = sys.argv[3]
 
     print("Starting evaluation...")
-
     data_list = evaluate_CES(model, llm)
     print("Evaluation complete.")
+
     print("Processing data...")
-    get_data(data_list)
-    print("Data processed. All done.")
+    averages, images = get_data(data_list)
+    print("Data processed.")
+
+    print("Creating PDF report...")
+    create_pdf_report(model, llm, SUFFIX, averages, images)
+    print("PDF report created. All done.")
