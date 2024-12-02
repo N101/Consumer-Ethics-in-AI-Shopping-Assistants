@@ -1,9 +1,13 @@
 # Project specific files
-data/averages/averages_TEST*.csv
-data/averages/averages_GPT_10_*.csv
+resources/data/averages/TEST*.csv
+resources/data/averages/averages_TEST*.csv
+resources/data/averages/averages_GPT_10_*.csv
 
-data/raw_data/raw_data_TEST*.csv
-data/raw_data/raw_data_GPT_10_*.csv
+resources/data/raw_data/TEST*.csv
+resources/data/raw_data/raw_data_TEST*.csv
+resources/data/raw_data/raw_data_GPT_10_*.csv
+
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
