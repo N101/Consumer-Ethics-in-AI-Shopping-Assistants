@@ -114,6 +114,7 @@ def get_data(data_list: list) -> list:
     # create graphs of the averages
     graphs = pd.merge(avgs, ref, on="#", how="inner")
     graphs = graphs.drop(graphs.columns[0], axis=1) # remove index col added by merge
+    graphs.index += 1
 
     # questionnaire slices according to categories (active, passive, etc.)
     slices = [slice(0, 5), slice(5, 11), slice(11, 16), slice(16, 21), slice(21, 23), slice(23, 27), slice(27, None)]
@@ -121,13 +122,12 @@ def get_data(data_list: list) -> list:
 
     # calculating errors for error bars (standard deviation)
     errors = pd.DataFrame(0, index=graphs.index, columns=graphs.columns)
-    errors["Averages"] = df.groupby("#")["Response"].std()
-    print(errors["Averages"])
+    errors["Average"] = df.groupby("#")["Response"].std()
 
     images = make_graphs(graphs, slices, labels, errors, SUFFIX)
 
     # create heatmap of the raw data
-    images.append(make_heatmap(df))
+    images.append(make_heatmap(df, SUFFIX))
 
 
     # create pdf report
