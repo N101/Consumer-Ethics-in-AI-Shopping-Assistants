@@ -72,5 +72,7 @@ case $model in
         ;;
 esac
 
-echo "Using $model's $llm"
+echo ""
+echo "––––––––––––––––– Using $model's $llm"
+echo ""
 python3 src/main.py "$model" "$llm" "$suffix"
