@@ -7,10 +7,11 @@ resources/data/raw_data/TEST*.csv
 resources/data/raw_data/raw_data_*TEST*.csv
 resources/data/raw_data/raw_data_GPT_10_*.csv
 
+src/notebooks/final_graphs_gpt.ipynb
+src/notebooks/*.png
 
-
-data/*.csv
-misc/
+resources/data/*.csv
+resources/misc/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
