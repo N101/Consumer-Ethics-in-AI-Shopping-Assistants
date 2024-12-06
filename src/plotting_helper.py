@@ -7,7 +7,7 @@ YLIM = (0, 5.9)
 
 
 def make_graphs(
-    df: pd.DataFrame, slices: list, labels: list, errors: pd.DataFrame, suffix: str
+    df: pd.DataFrame, slices: list, labels: list, errors: pd.DataFrame, prefix: str
 ) -> list[plt.Figure]:
     images = []
     capsizes = {"downloading": 7, "passive": 3}
@@ -31,16 +31,16 @@ def make_graphs(
             ylabel="Avg Score",
             figsize=(10, 5),
             rot=0,
-        ).legend([f"{suffix}", "Students", "Non-students"])
+        ).legend([f"{prefix}", "Students", "Non-students"])
         fig.tight_layout()
         images.append(fig)
     return images
 
 
-def make_heatmap(df: pd.DataFrame, suffix: str) -> plt.Figure:
+def make_heatmap(df: pd.DataFrame, prefix: str) -> plt.Figure:
     fig, ax = plt.subplots()
     pivot_table = df.pivot_table(values="Response", index="Iteration", columns="#")
     sns.heatmap(pivot_table, cmap="viridis", cbar_kws={"label": "Responses"}, ax=ax)
-    ax.set_title(f"Heatmap {suffix}")
+    ax.set_title(f"{prefix} Heatmap")
     fig.tight_layout()
     return fig

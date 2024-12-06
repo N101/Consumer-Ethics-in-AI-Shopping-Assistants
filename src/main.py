@@ -16,7 +16,7 @@ from report_helper import init_pdf, create_pdf_report
 
 NUM_ITR = 5
 MAX_RETRIES = 3
-SUFFIX = ""
+PREFIX = ""
 
 
 def get_questions(path: str, regex: str) -> list[str]:
@@ -124,13 +124,12 @@ def get_data(data_list: list) -> list:
     errors = pd.DataFrame(0, index=graphs.index, columns=graphs.columns)
     errors["Average"] = df.groupby("#")["Response"].std()
 
-    images = make_graphs(graphs, slices, labels, errors, SUFFIX)
+    images = make_graphs(graphs, slices, labels, errors, PREFIX)
 
     # create heatmap of the raw data
-    images.append(make_heatmap(df, SUFFIX))
+    images.append(make_heatmap(df, PREFIX))
 
 
-    # create pdf report
     return avgs, images
 
 
@@ -151,7 +150,7 @@ if __name__ == "__main__":
     """
     model = sys.argv[1]
     llm = sys.argv[2]
-    SUFFIX = sys.argv[3]
+    PREFIX = sys.argv[3]
 
     print("Starting evaluation...")
     data_list = evaluate_CES(model, llm)
@@ -162,5 +161,5 @@ if __name__ == "__main__":
     print("Data processed.")
 
     print("Creating PDF report...")
-    create_pdf_report(model, llm, SUFFIX, averages, images)
+    create_pdf_report(model, llm, PREFIX, averages, images)
     print("PDF report created. All done.")
