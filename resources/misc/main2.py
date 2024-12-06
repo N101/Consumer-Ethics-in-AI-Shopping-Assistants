@@ -5,6 +5,7 @@ from openai import OpenAI
 from anthropic import Anthropic
 from google.generativeai import GenerativeModel, configure
 from together import Together
+from mistralai import Mistral
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -17,16 +18,17 @@ from fpdf import FPDF
 # global variables
 # OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 OPENAI_API_KEY_HfP = os.environ['OPENAI_API_KEY_HfP']
-# ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
-# GEMINI_API_KEY = os.environ['GEMINI_API_KEY']
-# TOGETHER_AI_API_KEY = os.environ['TOGETHER_AI_API_KEY']
+ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
+GEMINI_API_KEY = os.environ['GEMINI_API_KEY']
+TOGETHER_AI_API_KEY = os.environ['TOGETHER_AI_API_KEY']
+MISTRAL_AI_API_KEY = os.environ['MISTRAL_AI_API_KEY']
 
 NUM_ITR = 10 # number of iterations the questions are to be run
 MAX_RETRIES = 5
 
-PATH_TO_QUESTIONS = "/Users/noah.kieferdiaz/Documents/Uni/BA_Thesis/LLM-consumer-ethics/resources/CES_questionnaire.md"
-DATA_STORAGE_PATH = ""
-SUFFIX = "GPT-4o-mini"
+PATH_TO_QUESTIONS = "CES_questionnaire.md"
+DATA_STORAGE_PATH = "data/"
+SUFFIX = "Mixtral_8x22b"
 
 SYSTEM_PROMPT = """
 You will be presented with a statement. Please rate the statement on a 5 point scale from 1 = 'strongly believe that it is wrong' to 5 = 'strongly believe that it is not wrong'
@@ -84,7 +86,7 @@ def get_response_t(client, content: str, i: int, j: int, model="gpt-4o-mini", te
     return [i, content, j, response.choices[0].message.content.strip()]
 
 # function to get completion from Google AI Studio
-def get_response_gemini(client, content: str, i: int, j: int, max_output_token=256, temperature=1):
+def get_response_gemini(client: GenerativeModel, content: str, i: int, j: int, max_output_token=256, temperature=1):
     response = client.generate_content(content)
     return [i, content, j, response.text.strip()]
 
@@ -100,14 +102,26 @@ def get_response_claude(client, content: str, i: int, j: int, model="claude-3-5-
     )
     return [i, content, j, response.content.strip()]
 
+
+def get_response_mistral(client: Mistral, content: str, i: int, j: int, model="open-mixtral-8x22b"):
+    response = client.chat.complete(
+        model = model,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": f"<statement>{content}</statement>"}
+        ],
+    )
+    return [i, content, j, response.choices[0].message.content.strip()]
+
 def main() -> None:
     # instantiate all model clients
     client_gpt = OpenAI(api_key=OPENAI_API_KEY_HfP)
     # client_claude = Anthropic(api_key=ANTHROPIC_API_KEY)
     # client_together = Together(api_key=TOGETHER_AI_API_KEY)
-    # client_together = OpenAI(api_key=TOGETHER_AI_API_KEY, base_url="https://api.together.xyz/v1")
-    # configure(api_key=GEMINI_API_KEY)
-    # client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
+    client_together = OpenAI(api_key=TOGETHER_AI_API_KEY, base_url="https://api.together.xyz/v1")
+    configure(api_key=GEMINI_API_KEY)
+    client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
+    client_mistral = Mistral(api_key=MISTRAL_AI_API_KEY)
 
     # make regex to extract questions correctly
     re_typed_question = r'^\d+\. (.*)$'
@@ -124,6 +138,7 @@ def main() -> None:
                     #                 "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", 1)
                     # executor.submit(get_response_gemini, client_gemini, q, i, j, 1)
                     # executor.submit(get_response_claude, client_claude, q, i, j, "claude-3-5-sonnet-20240620", 1)
+                    # executor.submit(get_response_mistral, client_mistral, q, i, j, "open-mixtral-8x22b")
                     for i, q in enumerate(questions, 1)     # loop through questions; i = num of question
                     for j in range(NUM_ITR)     # iterations loop
                 ]
@@ -141,7 +156,13 @@ def main() -> None:
                 raise Exception(f"Maximum number of retries {MAX_RETRIES} after RateLimitErrors exceeded")
             print(e)
             # add small random jitter to avoid rescheduling all to the same time
-            time.sleep((3 * (1+random.random())) ** retry)    # random.random gives number between 0-1
+            time.sleep((3 * (1+random.random())) ** (retry%3))    # random.random gives number between 0-1
+        except Exception as e:
+            if retry == MAX_RETRIES-1:
+                raise Exception(f"Maximum number of retries {MAX_RETRIES} after RateLimitErrors exceeded")
+            print(f"Error: probably rate limit exceeded: {e}")
+            # add small random jitter to avoid rescheduling all to the same time
+            time.sleep((3 * (1+random.random())) ** (retry%3))    # random.random gives number between 0-1
 
 
     # reestablishes the question order of the parallel results
