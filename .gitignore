@@ -1,10 +1,10 @@
 # Project specific files
 resources/data/averages/TEST*.csv
-resources/data/averages/averages_TEST*.csv
+resources/data/averages/averages_*TEST*.csv
 resources/data/averages/averages_GPT_10_*.csv
 
 resources/data/raw_data/TEST*.csv
-resources/data/raw_data/raw_data_TEST*.csv
+resources/data/raw_data/raw_data_*TEST*.csv
 resources/data/raw_data/raw_data_GPT_10_*.csv
 
 
