@@ -9,6 +9,7 @@ OPENAI_API_KEY_HfP = os.getenv('OPENAI_API_KEY_HfP')
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 TOGETHER_AI_API_KEY = os.getenv('TOGETHER_AI_API_KEY')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+GROK_API_KEY = os.getenv('GROK_API_KEY')
 
 
 # Sytstem prompts: 

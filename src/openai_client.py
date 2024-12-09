@@ -8,11 +8,12 @@ from anthropic import Anthropic
 from together import Together
 from google.generativeai import GenerativeModel, configure
 
-from config import (
+from config.configuration import (
     OPENAI_API_KEY_HfP,
     ANTHROPIC_API_KEY,
     TOGETHER_AI_API_KEY,
     GEMINI_API_KEY,
+    GROK_API_KEY,
     SYSTEM_PROMPT
 )
 
@@ -24,6 +25,7 @@ client_claude = Anthropic(api_key=ANTHROPIC_API_KEY)
 client_together = OpenAI(api_key=TOGETHER_AI_API_KEY, base_url="https://api.together.xyz/v1")
 configure(api_key=GEMINI_API_KEY)
 client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
+client_grok = OpenAI(api_key=GROK_API_KEY, base_url="https://api.x.ai/v1")
 
 
 # GPT
@@ -41,14 +43,15 @@ def get_response(content: str, model="gpt-4o-mini", temperature=1):
 def get_response_t(content: str, i: int, j: int, model="gpt-4o-mini", max_tokens=200, temperature=1):
     if "gpt" in model:
         client = client_gpt
+    elif "grok" in model:
+        client = client_gpt
     else:
-        print("Using Together")
         client = client_together
 
     response = client.chat.completions.create(
         model=model,
         temperature=temperature,
-        messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": f"<statement>{content}</statement>"}],
+        messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": f"{content}"}],
         max_completion_tokens=max_tokens
     )
     return [i, content, j, response.choices[0].message.content.strip()]

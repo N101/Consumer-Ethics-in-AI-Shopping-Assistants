@@ -38,6 +38,7 @@ def choose_llm(model: str) -> callable:
     choice = {
         "gpt": get_response_t,
         "gemini": get_response_gemini,
+        "grok": get_response_t,
     }
     try:
         return choice[model]

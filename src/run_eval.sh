@@ -11,11 +11,11 @@ case $model in
         case $option in
             1)
                 llm="gpt-4o"
-                suffix="GPT-4o"
+                prefix="GPT-4o"
                 ;;
             2)
                 llm="gpt-4o-mini"
-                suffix="GPT-4o-mini"
+                prefix="GPT-4o-mini"
                 ;;
             *)
                 echo "Invalid option"
@@ -34,23 +34,23 @@ case $model in
         case $option in
         1)
                 llm="meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo"
-                suffix="LLaMA-3.2-90B"
+                prefix="LLaMA-3.2-90B"
                 ;;
             2)
                 llm="meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo"
-                suffix="LLaMA-3.2-11B"
+                prefix="LLaMA-3.2-11B"
                 ;;
             3)
                 llm="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
-                suffix="LLaMA-3.1-70B"
+                prefix="LLaMA-3.1-70B"
                 ;;
             4)
                 llm="meta-llama/Meta-Llama-3-70B-Instruct-Turbo"
-                suffix="LLaMA-3-70B"
+                prefix="LLaMA-3-70B"
                 ;;
             5)
                 llm="mistralai/Mixtral-8x22B-Instruct-v0.1"
-                suffix="Mixtral-8x22B"
+                prefix="Mixtral-8x22B"
                 ;;
             *)
                 echo "Invalid option"
@@ -60,11 +60,15 @@ case $model in
         ;;
     "gemini")
         llm="gemini-1.5-flash"
-        suffix="Gemini"
+        prefix="Gemini"
         ;;
     "claude")
         llm="claude-3-5-sonnet-20240620"
-        suffix="Claude"
+        prefix="Claude"
+        ;;
+    "grok")
+        llm="grok-beta"
+        prefix="Grok"
         ;;
     *)
         echo "Unknown model: $model"
@@ -75,4 +79,4 @@ esac
 echo ""
 echo "––––––––––––––––– Using $model's $llm"
 echo ""
-python3 src/main.py "$model" "$llm" "$suffix"
+python3 src/main.py "$model" "$llm" "$prefix"
