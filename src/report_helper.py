@@ -56,17 +56,24 @@ def create_pdf_report(model: str, llm: str, prefix: str, data_list: pd.DataFrame
     
     # Parameters
     pdf.set_font("Times", size=12)
-    pdf.cell(200, 5, f"Model: {model}      (prefix: {prefix})", ln=True)
-    pdf.cell(200, 5, f"LLM: {llm}", ln=True)
+    pdf.cell(160, 5, f"Model: {model}      (prefix: {prefix})", ln=True)
+    pdf.cell(160, 5, f"LLM: {llm}", ln=True)
     
     pdf.ln(5)
     
     # System Prompt
     pdf.set_font("Times", 'B', 12)
-    pdf.cell(200, 5, "System Prompt:", ln=False)
+    pdf.cell(160, 5, "System Prompt:", ln=False)
     pdf.set_font("Times", size=12)
     pdf.ln(0)  # Add a small line break
     pdf.multi_cell(160, 5, SYSTEM_PROMPT)
+    pdf.ln(10)
+    
+    # Description
+    pdf.set_font("Times", 'B', 12)
+    pdf.cell(160, 5, "Description:", ln=True)
+    pdf.set_font("Times", size=12)
+    pdf.multi_cell(0, 25, "", border=1)  # Empty text box spanning the default page width
     pdf.ln(10)
     
     # Data
