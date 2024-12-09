@@ -12,9 +12,9 @@ from config.configuration import (
 )
 from openai_client import get_response_t, get_response_gemini
 from plotting_helper import make_graphs, make_heatmap
-from report_helper import init_pdf, create_pdf_report
+from report_helper import create_pdf_report
 
-NUM_ITR = 5
+NUM_ITR = 100
 MAX_RETRIES = 3
 PREFIX = ""
 
@@ -93,16 +93,16 @@ def evaluate_CES(model: str, llm: str) -> list:
 def get_data(data_list: list) -> list:
     # save raw data to csv
     df = pd.DataFrame(data_list, columns=["#", "Question", "Iteration", "Response"])
-    # df.to_csv(f"{DATA_FOLDER_PATH}/raw_data/{SUFFIX}_raw_data.csv", index=False)
-    df.to_csv(f"{DATA_FOLDER_PATH}/raw_data/TEST_raw_data.csv", index=False)
+    df.to_csv(f"{DATA_FOLDER_PATH}/raw_data/{PREFIX}_raw_data.csv", index=False)
+    # df.to_csv(f"{DATA_FOLDER_PATH}/raw_data/TEST_raw_data.csv", index=False)
 
     # process data 
     df["Response"] = df["Response"].astype(int)
     avgs = pd.DataFrame(df.groupby("#")["Response"].mean())
     avgs.rename({"Response": "Average"}, axis=1, inplace=True)
     avgs["std"] = df.groupby("#")["Response"].std()
-    # avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/{SUFFIX}_averages.csv")
-    avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/TEST_averages.csv")
+    avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/{PREFIX}_averages.csv")
+    # avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/TEST_averages.csv")
     avgs.drop("std", axis=1, inplace=True)
 
 
@@ -154,12 +154,12 @@ if __name__ == "__main__":
 
     print("Starting evaluation...")
     data_list = evaluate_CES(model, llm)
-    print("Evaluation complete.")
+    print("\tEvaluation complete.")
 
     print("Processing data...")
     averages, images = get_data(data_list)
-    print("Data processed.")
+    print("\tData processed.")
 
     print("Creating PDF report...")
     create_pdf_report(model, llm, PREFIX, averages, images)
-    print("PDF report created. All done.")
+    print("\tPDF report created. All done.")
