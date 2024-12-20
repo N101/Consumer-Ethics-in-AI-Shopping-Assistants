@@ -10,6 +10,7 @@ read model
 
 case $model in
     1)
+        model="gpt"
         echo "1: gpt-4o"
         echo "2: gpt-4o-mini"
         echo "3: gpt-3.5-turbo"
@@ -35,6 +36,7 @@ case $model in
         esac
         ;;
     2)
+        model="together"
         echo "1: LLaMA 3.2 90B"
         echo "2: LLaMA 3.2 11B"
         echo "3: LLaMA 3.1 70B"
@@ -70,14 +72,17 @@ case $model in
         esac
         ;;
     3)
+        model="gemini"
         llm="gemini-1.5-flash"
         prefix="Gemini"
         ;;
     4)
+        model="claude"
         llm="claude-3-5-sonnet-20240620"
         prefix="Claude"
         ;;
     5)
+        model="grok"
         llm="grok-beta"
         prefix="Grok"
         ;;
