@@ -44,7 +44,7 @@ def get_response_t(content: str, i: int, j: int, model="gpt-4o-mini", max_tokens
     if "gpt" in model:
         client = client_gpt
     elif "grok" in model:
-        client = client_gpt
+        client = client_grok
     else:
         client = client_together
 
