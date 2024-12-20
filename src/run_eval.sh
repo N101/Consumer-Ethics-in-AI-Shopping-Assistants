@@ -1,9 +1,15 @@
 #!/bin/zsh
 
-model=$1
+echo "1: GPT"
+echo "2: Together"
+echo "3: Gemini"
+echo "4: Claude"
+echo "5: Grok"
+echo -n "Select a model: "
+read model
 
 case $model in
-    "gpt")
+    1)
         echo "1: gpt-4o"
         echo "2: gpt-4o-mini"
         echo "3: gpt-3.5-turbo"
@@ -28,7 +34,7 @@ case $model in
                 ;;
         esac
         ;;
-    "together")
+    2)
         echo "1: LLaMA 3.2 90B"
         echo "2: LLaMA 3.2 11B"
         echo "3: LLaMA 3.1 70B"
@@ -63,15 +69,15 @@ case $model in
                 ;;
         esac
         ;;
-    "gemini")
+    3)
         llm="gemini-1.5-flash"
         prefix="Gemini"
         ;;
-    "claude")
+    4)
         llm="claude-3-5-sonnet-20240620"
         prefix="Claude"
         ;;
-    "grok")
+    5)
         llm="grok-beta"
         prefix="Grok"
         ;;
