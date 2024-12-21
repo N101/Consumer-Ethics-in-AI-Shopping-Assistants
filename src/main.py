@@ -8,6 +8,7 @@ import pandas as pd
 
 from config.configuration import (
     PATH_TO_QUESTIONS,
+    PATH_TO_CONTEMP_QUESTIONS,
     DATA_FOLDER_PATH,
 )
 from openai_client import get_response_t, get_response_gemini
@@ -51,7 +52,11 @@ def choose_llm(model: str) -> callable:
 
 def evaluate_CES(model: str, llm: str) -> list:
     regex = r"^\d+\. (.+)$"
-    questions = get_questions(PATH_TO_QUESTIONS, regex)
+    ces_questions = get_questions(PATH_TO_QUESTIONS, regex)
+    contemp_questions = get_questions(PATH_TO_CONTEMP_QUESTIONS, regex)
+
+    # Decide which questions set to use
+    questions = ces_questions
 
     data_list = []
     retries = 0

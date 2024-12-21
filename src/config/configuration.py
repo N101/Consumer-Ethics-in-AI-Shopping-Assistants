@@ -40,5 +40,6 @@ Examples:
 
 # data paths
 PATH_TO_QUESTIONS = os.path.join("resources", "CES_questionnaire.md")
+PATH_TO_CONTEMP_QUESTIONS = os.path.join("resources", "contemporary_CES.md")
 DATA_FOLDER_PATH = os.path.join("resources", "data")
 STATE_FILE = os.path.join("src", "config", "state.json")
