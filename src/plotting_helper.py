@@ -31,7 +31,7 @@ def make_graphs(
             ylabel="Avg Score",
             figsize=(10, 5),
             rot=0,
-        ).legend([f"{prefix}", "Students", "Non-students"])
+        ).legend([f"{prefix.split('_')[1]}"])
         fig.tight_layout()
         images.append(fig)
     return images
