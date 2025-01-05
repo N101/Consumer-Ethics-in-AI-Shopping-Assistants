@@ -51,7 +51,7 @@ def choose_llm(model: str) -> callable:
 
 
 def evaluate_CES(model: str, llm: str) -> list:
-    regex = r"^\d+\. (.+)$"
+    regex = r"^\d+\.\s+(.+)$"
     ces_questions = get_questions(PATH_TO_QUESTIONS, regex)
     contemp_questions = get_questions(PATH_TO_CONTEMP_QUESTIONS, regex)
 
