@@ -56,7 +56,7 @@ def evaluate_CES(model: str, llm: str) -> list:
     contemp_questions = get_questions(PATH_TO_CONTEMP_QUESTIONS, regex)
 
     # Decide which questions set to use
-    questions = ces_questions
+    questions = contemp_questions
 
     data_list = []
     retries = 0
@@ -96,19 +96,19 @@ def evaluate_CES(model: str, llm: str) -> list:
     return data_list
 
 
-def get_data(data_list: list) -> list:
+def get_data(data_list: list):
     # save raw data to csv
     df = pd.DataFrame(data_list, columns=["#", "Question", "Iteration", "Response"])
-    df.to_csv(f"{DATA_FOLDER_PATH}/raw_data/{PREFIX}_raw_data.csv", index=False)
-    # df.to_csv(f"{DATA_FOLDER_PATH}/raw_data/TEST_raw_data.csv", index=False)
+    # df.to_csv(f"{DATA_FOLDER_PATH}/raw_data/{PREFIX}_raw_data.csv", index=False)
+    df.to_csv(f"{DATA_FOLDER_PATH}/raw_data/TEST_raw_data.csv", index=False)
 
     # process data 
     df["Response"] = df["Response"].astype(int)
     avgs = pd.DataFrame(df.groupby("#")["Response"].mean())
     avgs.rename({"Response": "Average"}, axis=1, inplace=True)
     avgs["std"] = df.groupby("#")["Response"].std()
-    avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/{PREFIX}_averages.csv")
-    # avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/TEST_averages.csv")
+    # avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/{PREFIX}_averages.csv")
+    avgs.to_csv(f"{DATA_FOLDER_PATH}/averages/TEST_averages.csv")
     avgs.drop("std", axis=1, inplace=True)
 
 
@@ -118,19 +118,19 @@ def get_data(data_list: list) -> list:
 
 
     # create graphs of the averages
-    graphs = pd.merge(avgs, ref, on="#", how="inner")
-    graphs = graphs.drop(graphs.columns[0], axis=1) # remove index col added by merge
-    graphs.index += 1
+    graphs = avgs
 
     # questionnaire slices according to categories (active, passive, etc.)
     slices = [slice(0, 5), slice(5, 11), slice(11, 16), slice(16, 21), slice(21, 23), slice(23, 27), slice(27, None)]
+    slices2 = [slice(0,4), slice(4, 9), slice(9, 14), slice(14,None)]
     labels = ["active", "passive", "questionable", "no harm", "downloading", "recycling", "doing good"]
+    labels2 = ["RM", "SE", "TV", "DC"]
 
     # calculating errors for error bars (standard deviation)
     errors = pd.DataFrame(0, index=graphs.index, columns=graphs.columns)
     errors["Average"] = df.groupby("#")["Response"].std()
 
-    images = make_graphs(graphs, slices, labels, errors, PREFIX)
+    images = make_graphs(graphs, slices2, labels2, errors, PREFIX)
 
     # create heatmap of the raw data
     images.append(make_heatmap(df, PREFIX))
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     """
     model = sys.argv[1]
     llm = sys.argv[2]
-    PREFIX = sys.argv[3]
+    PREFIX = "contemp_" + sys.argv[3]
 
     print("Starting evaluation...")
     data_list = evaluate_CES(model, llm)
