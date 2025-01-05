@@ -13,6 +13,8 @@ src/notebooks/*.png
 resources/data/*.csv
 resources/misc/
 
+test.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
