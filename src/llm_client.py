@@ -7,6 +7,7 @@ from openai import OpenAI
 from anthropic import Anthropic
 from together import Together
 from google.generativeai import GenerativeModel, configure
+import time
 
 from config.configuration import (
     OPENAI_API_KEY_HfP,
@@ -59,6 +60,8 @@ def get_response_t(content: str, i: int, j: int, model="gpt-4o-mini", max_tokens
 
 def get_response_gemini(content: str, i: int, j: int, model="", max_output_token=256, temperature=1):
     response = client_gemini.generate_content(content)
+    print("waiting zZzZ...")
+    time.sleep(1)
     return [i, content, j, response.text.strip()]
 
 
