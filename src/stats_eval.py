@@ -153,6 +153,9 @@ def analyze_all_categories(processed_data):
         groups = [scores for scores in data.values()]
         f_stat, p_val = stats.f_oneway(*groups)
 
+        # Calculate MSE
+        mse = np.mean(all_data - np.mean(all_data)) ** 2
+
         # Perform Tukey's HSD
         tukey = pairwise_tukeyhsd(all_data, group_labels)
 
@@ -163,6 +166,7 @@ def analyze_all_categories(processed_data):
             "tukey_results": tukey,
             "means": {group: np.mean(scores) for group, scores in data.items()},
             "std": {group: np.std(scores) for group, scores in data.items()},
+            "mse": mse
         }
 
     return results
@@ -242,8 +246,9 @@ if __name__ == "__main__":
         for group, mean in results[category]["means"].items():
             std = results[category]["std"][group]
             print(f"{group}: {mean:.4f} (±{std:.4f})")
+        print(f"\nMean Squared Error: {results[category]['mse']:.4f}")
         print("\nTukey's HSD Results:")
         print(results[category]["tukey_results"])
 
         # Create visualization
-        # visualize_results(processed_data, category)
+        visualize_results(processed_data, category)
