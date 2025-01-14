@@ -13,7 +13,7 @@ from config.configuration import (
     ANTHROPIC_API_KEY,
     TOGETHER_AI_API_KEY,
     GEMINI_API_KEY,
-    GROK_API_KEY,
+    XAI_API_KEY,
     SYSTEM_PROMPT
 )
 
@@ -25,7 +25,7 @@ client_claude = Anthropic(api_key=ANTHROPIC_API_KEY)
 client_together = OpenAI(api_key=TOGETHER_AI_API_KEY, base_url="https://api.together.xyz/v1")
 configure(api_key=GEMINI_API_KEY)
 client_gemini = GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
-client_grok = OpenAI(api_key=GROK_API_KEY, base_url="https://api.x.ai/v1")
+client_grok = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 
 
 # GPT
