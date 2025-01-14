@@ -153,6 +153,7 @@ def analyze_all_categories(processed_data):
         groups = [scores for scores in data.values()]
         f_stat, p_val = stats.f_oneway(*groups)
 
+        #TODO: MSE caclulation is incorrect. It should be the sum of squared differences between the observed values and the group means.
         # Calculate MSE
         mse = np.mean(all_data - np.mean(all_data)) ** 2
 
