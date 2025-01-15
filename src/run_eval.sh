@@ -83,7 +83,7 @@ case $model in
         ;;
     5)
         model="grok"
-        llm="grok-beta"
+        llm="grok-2-1212"
         prefix="Grok"
         ;;
     *)
