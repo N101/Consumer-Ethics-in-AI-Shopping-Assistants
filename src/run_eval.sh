@@ -14,6 +14,7 @@ case $model in
         echo "1: gpt-4o"
         echo "2: gpt-4o-mini"
         echo "3: gpt-3.5-turbo"
+        echo "4: gpt-4"
         echo -n "Select an option: " 
         read option
         case $option in
@@ -28,6 +29,10 @@ case $model in
             3)
                 llm="gpt-3.5-turbo"
                 prefix="GPT-3.5-turbo"
+                ;;
+            4)
+                llm="gpt-4"
+                prefix="GPT-4"
                 ;;
             *)
                 echo "Invalid option"
