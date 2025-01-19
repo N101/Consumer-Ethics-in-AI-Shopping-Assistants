@@ -122,9 +122,9 @@ def get_data(data_list: list):
 
     # questionnaire slices according to categories (active, passive, etc.)
     slices = [slice(0, 5), slice(5, 11), slice(11, 16), slice(16, 21), slice(21, 23), slice(23, 27), slice(27, None)]
-    slices2 = [slice(0,4), slice(4, 9), slice(9, 14), slice(14,None)]
+    slices2 = [slice(0,4), slice(4, 9), slice(9, 14), slice(14,16), slice(16,None)]
     labels = ["active", "passive", "questionable", "no harm", "downloading", "recycling", "doing good"]
-    labels2 = ["RM", "SE", "TV", "DC"]
+    labels2 = ["RM", "SE", "TV", "PDC", "NDC"]
 
     # calculating errors for error bars (standard deviation)
     errors = pd.DataFrame(0, index=graphs.index, columns=graphs.columns)
