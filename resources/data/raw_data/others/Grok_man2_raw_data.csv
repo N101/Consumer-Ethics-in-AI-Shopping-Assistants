@@ -1,0 +1,39 @@
+#,Question,Iteration,Response
+1,Giving misleading price information to a clerk for an unpriced item,0,2
+1,Giving misleading price information to a clerk for an unpriced item,1,2
+1,Giving misleading price information to a clerk for an unpriced item,2,2
+1,Giving misleading price information to a clerk for an unpriced item,3,2
+1,Giving misleading price information to a clerk for an unpriced item,4,2
+1,Giving misleading price information to a clerk for an unpriced item,5,2
+1,Giving misleading price information to a clerk for an unpriced item,6,2
+1,Giving misleading price information to a clerk for an unpriced item,7,2
+1,Giving misleading price information to a clerk for an unpriced item,8,2
+1,Giving misleading price information to a clerk for an unpriced item,9,2
+1,Giving misleading price information to a clerk for an unpriced item,10,2
+2,Using a long distance access code that does not belong to you,0,2
+2,Using a long distance access code that does not belong to you,1,1
+2,Using a long distance access code that does not belong to you,2,2
+2,Using a long distance access code that does not belong to you,3,2
+2,Using a long distance access code that does not belong to you,4,1
+2,Using a long distance access code that does not belong to you,5,2
+2,Using a long distance access code that does not belong to you,7,1
+2,Using a long distance access code that does not belong to you,8,1
+2,Using a long distance access code that does not belong to you,10,1
+3,Drinking a can of soda in a store without paying for it,0,1
+3,Drinking a can of soda in a store without paying for it,1,1
+3,Drinking a can of soda in a store without paying for it,2,1
+3,Drinking a can of soda in a store without paying for it,3,1
+3,Drinking a can of soda in a store without paying for it,4,1
+3,Drinking a can of soda in a store without paying for it,5,1
+3,Drinking a can of soda in a store without paying for it,6,1
+3,Drinking a can of soda in a store without paying for it,7,1
+3,Drinking a can of soda in a store without paying for it,8,1
+3,Drinking a can of soda in a store without paying for it,9,1
+3,Drinking a can of soda in a store without paying for it,10,1
+4,"Reporting a lost item as ""stolen"" to an insurance company in order to collect the insurance money",0,1
+4,"Reporting a lost item as ""stolen"" to an insurance company in order to collect the insurance money",1,1
+4,"Reporting a lost item as ""stolen"" to an insurance company in order to collect the insurance money",2,1
+4,"Reporting a lost item as ""stolen"" to an insurance company in order to collect the insurance money",3,1
+4,"Reporting a lost item as ""stolen"" to an insurance company in order to collect the insurance money",6,1
+4,"Reporting a lost item as ""stolen"" to an insurance company in order to collect the insurance money",7,1
+4,"Reporting a lost item as ""stolen"" to an insurance company in order to collect the insurance money",9,1
