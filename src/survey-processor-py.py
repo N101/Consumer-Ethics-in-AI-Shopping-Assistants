@@ -34,11 +34,15 @@ class SurveyProcessor:
         responses = []
         for i, line in enumerate(lines, 1):
             # Match pattern: "number) response"
-            match = re.match(rf"^{i}\)\s*([1-5])$", line)
-            if not match:
-                raise ValueError(f"Invalid format in line {i}. Expected '{i}) X' where X is 1-5")
+            # match = re.match(rf"^{i}\)\s*([1-5])$", line)
+            # if not match:
+            #     raise ValueError(f"Invalid format in line {i}. Expected '{i}) X' where X is 1-5")
             
-            response = int(match.group(1))
+            # response = int(match.group(1))
+
+            # Match pattern: "response"
+            response = int(line) 
+
             if not 1 <= response <= 5:
                 raise ValueError(f"Response in line {i} must be between 1 and 5")
             
@@ -79,7 +83,7 @@ class SurveyProcessor:
             raise
 
 def main():
-    processor = SurveyProcessor("SA_ionic_resutls.csv")
+    processor = SurveyProcessor("rufus_results(chat).csv")
     
     print("\nSurvey Response Processor")
     print("------------------------")
