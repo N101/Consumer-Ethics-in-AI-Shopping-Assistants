@@ -157,7 +157,12 @@ if __name__ == "__main__":
     model = sys.argv[1]
     llm = sys.argv[2]
     PREFIX = "contemp_" + sys.argv[3]
+    # model = "Amazon Rufus"
+    # llm = "rufus"
+    # PREFIX = "Rufus_CES_"
 
+    # print("Skipping eval")
+    # data_list = pd.read_csv(f"{DATA_FOLDER_PATH}/raw_data/Rufus_CES_raw_data.csv")
     print("Starting evaluation...")
     data_list = evaluate_CES(model, llm)
     print("\tEvaluation complete.")
