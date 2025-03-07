@@ -11,7 +11,7 @@ from config.configuration import (
     PATH_TO_CONTEMP_QUESTIONS,
     DATA_FOLDER_PATH,
 )
-from openai_client import get_response_t, get_response_gemini
+from llm_client import get_response_t, get_response_gemini
 from plotting_helper import make_graphs, make_heatmap
 from report_helper import create_pdf_report
 
